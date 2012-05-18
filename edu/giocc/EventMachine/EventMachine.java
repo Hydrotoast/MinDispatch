@@ -5,7 +5,7 @@ import java.util.Queue;
 
 public class EventMachine {
 	// Event definition
-	public static class Event {
+	private static class Event {
 		public char type;
 		public String data;
 

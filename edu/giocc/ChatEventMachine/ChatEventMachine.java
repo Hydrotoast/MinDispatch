@@ -5,6 +5,41 @@ import edu.giocc.MinDispatch.EventDispatcher;
 import edu.giocc.MinDispatch.Handler;
 
 public class ChatEventMachine {
+	private static class User {
+		public String name;
+		
+		public User(String name) {
+			this.name = name;
+		}
+	}
+	
+	private static class UserArrival extends Event {
+		public User user;
+		
+		public UserArrival(User user) {
+			this.user = user;
+		}
+	}
+	
+	private static class UserDeparture extends Event {
+		public User user;
+		
+		public UserDeparture(User user) {
+			this.user = user;
+		}
+	}
+	
+	private static class UserMessage extends Event {
+		public User user;
+		public String message;
+
+		public UserMessage(User user, String message) {
+			this.user = user;
+			this.message = message;
+		}
+	}
+
+	
 	public static void main(String[] args) {
 		EventDispatcher dispatcher = new EventDispatcher();
 		dispatcher.registerChannel(UserArrival.class, new Handler() {
