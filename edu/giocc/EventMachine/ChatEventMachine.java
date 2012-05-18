@@ -1,4 +1,4 @@
-package edu.giocc.ChatEventMachine;
+package edu.giocc.EventMachine;
 
 import edu.giocc.MinDispatch.Event;
 import edu.giocc.MinDispatch.EventDispatcher;
