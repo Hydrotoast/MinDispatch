@@ -42,12 +42,6 @@ public class ChatEventMachine {
 	
 	public static void main(String[] args) {
 		EventDispatcher dispatcher = new EventDispatcher();
-		dispatcher.registerChannel(UserArrival.class, new Handler() {
-			@Override
-			public void dispatch(Event evt) {
-				
-			}
-		});
 		
 		dispatcher.registerChannel(UserArrival.class, new Handler() {
 			@Override
