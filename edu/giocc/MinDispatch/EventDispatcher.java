@@ -34,6 +34,7 @@ public class EventDispatcher implements DynamicRouter<Event> {
 
 	@Override
 	public void dispatch(Event content) {
+		assert content != null;
 		handlers.get(content.getClass()).dispatch(content);
 	}
 }

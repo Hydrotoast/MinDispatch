@@ -1,16 +1,14 @@
 package edu.giocc.EventMachine;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.Scanner;
 
 import edu.giocc.MinDispatch.Event;
 import edu.giocc.MinDispatch.EventDispatcher;
 import edu.giocc.MinDispatch.Handler;
 
-public class ChatAIEventMachine {
+public class StatefulChatEventMachine {
 	private static ChatState state;
 	private static Queue<Event> eventQueue;
 
@@ -26,6 +24,7 @@ public class ChatAIEventMachine {
 				recipient.dispatch(evt);
 		}
 
+		// Mutators
 		public void addUser(User user) {
 			users.add(user);
 		}
@@ -78,6 +77,7 @@ public class ChatAIEventMachine {
 			this.name = name;
 		}
 
+		// Event demultiplexing
 		public void dispatch(Event evt) {
 			if (evt.getClass() == UserMessage.class) {
 				UserMessage message = (UserMessage) evt;
@@ -85,83 +85,15 @@ public class ChatAIEventMachine {
 			}
 		}
 
+		// Event processing
 		public void processMessage(User user, String userMessage) {
 			if (user.equals(this))
 				return;
 		}
 
+		// Event generation
 		public void sendMessage(String message) {
 			eventQueue.add(new UserMessage(this, message));
-		}
-	}
-
-	private static class ChatAI extends User {
-		private static class ChatAIHandler extends Handler {
-			public Queue<Event> eventQueue;
-			public ChatAI ai;
-
-			public ChatAIHandler(Queue<Event> eventQueue, ChatAI ai) {
-				this.eventQueue = eventQueue;
-				this.ai = ai;
-			}
-		}
-
-		private static class AIEvent extends Event {
-			public String message;
-		}
-
-		private static class Greeting extends AIEvent {
-			public Greeting() {
-				message = "Hello to you";
-			}
-		}
-
-		private static class Farewell extends AIEvent {
-			public Farewell() {
-				message = "Goodbye to you";
-			}
-		}
-
-		private static class AnswerToLife extends AIEvent {
-			public AnswerToLife() {
-				message = "42";
-			}
-		}
-
-		private EventDispatcher responseDispatcher;
-		private HashMap<String, Event> respMap;
-
-		public ChatAI(Queue<Event> eventQueue, String name) {
-			super(eventQueue, name);
-			this.responseDispatcher = new EventDispatcher();
-			this.respMap = new HashMap<String, Event>();
-			respMap.put("hello", new Greeting());
-			respMap.put("goodbye", new Farewell());
-			respMap.put("answer to life", new AnswerToLife());
-
-			Handler AIHandler = new ChatAIHandler(eventQueue, this) {
-				@Override
-				public void dispatch(Event evt) {
-					AIEvent event = (AIEvent) evt;
-					eventQueue.add(new UserMessage(ChatAI.this, event.message));
-				}
-			};
-
-			responseDispatcher.registerChannel(Greeting.class, AIHandler);
-			responseDispatcher.registerChannel(Farewell.class, AIHandler);
-			responseDispatcher.registerChannel(AnswerToLife.class, AIHandler);
-		}
-
-		public void respond(User user, String request) {
-			Event evt = respMap.get(request);
-			if (evt != null) {
-				responseDispatcher.dispatch(evt);
-			}
-		}
-
-		@Override
-		public void processMessage(User user, String userMessage) {
-			respond(user, userMessage);
 		}
 	}
 
@@ -207,28 +139,25 @@ public class ChatAIEventMachine {
 	public static void main(String[] args) {
 		setup();
 
-		// Initialize user and AI
-		User me = new User(eventQueue, "me");
-		User ai = new ChatAI(eventQueue, "ai");
-		state.dispatch(new UserArrival(me));
-		state.dispatch(new UserArrival(ai));
+		// Initialize users
+		User foo = new User(eventQueue, "foo");
+		User bar = new User(eventQueue, "bar");
+		state.dispatch(new UserArrival(foo));
+		state.dispatch(new UserArrival(bar));
 		
-		Scanner s = new Scanner(System.in);
-		String line = "";
-		do {
-			// Parse events from the user
-			line = s.nextLine();
-			me.sendMessage(line);
-			
-			// Handle events
-			while (!eventQueue.isEmpty()) {
-				Event evt = eventQueue.remove();
-				state.dispatch(evt);
-			}
-		} while (!line.equals("goodbye") && s.hasNext());
-		s.close();
+		// Enqueue events from individual users
+		foo.sendMessage("hello, bar!");
+		bar.sendMessage("hello, foo!");
+		foo.sendMessage("goodbye, bar!");
 		
-		state.dispatch(new UserDeparture(state, me));
-		state.dispatch(new UserDeparture(state, ai));
+		// Dispatch all queued events
+		while (!eventQueue.isEmpty()) {
+			Event evt = eventQueue.remove();
+			state.dispatch(evt);
+		}
+		
+		// Finish up simulation
+		state.dispatch(new UserDeparture(state, foo));
+		state.dispatch(new UserDeparture(state, bar));
 	}
 }
