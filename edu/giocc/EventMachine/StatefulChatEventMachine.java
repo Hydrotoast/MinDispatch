@@ -9,7 +9,7 @@ import edu.giocc.MinDispatch.EventDispatcher;
 import edu.giocc.MinDispatch.Handler;
 
 public class StatefulChatEventMachine {
-	private static class ChatState extends EventDispatcher {
+	private static class ChatState {
 		private ArrayList<User> users;
 
 		public ChatState() {
@@ -50,7 +50,7 @@ public class StatefulChatEventMachine {
 	private static class UserDeparture extends Event {
 		public User user;
 		
-		public UserDeparture(ChatState state, User user) {
+		public UserDeparture(User user) {
 			this.user = user;
 		}
 	}
@@ -94,8 +94,8 @@ public class StatefulChatEventMachine {
 		}
 	}
 
-	public static void registerHandlers(ChatState state) {
-		state.registerChannel(UserArrival.class, new ChatHandler(state) {
+	public static void registerHandlers(EventDispatcher dispatcher, ChatState state) {
+		dispatcher.registerChannel(UserArrival.class, new ChatHandler(state) {
 			@Override
 			public void dispatch(Event evt) {
 				UserArrival arrival = (UserArrival) evt;
@@ -106,7 +106,7 @@ public class StatefulChatEventMachine {
 			}
 		});
 
-		state.registerChannel(UserDeparture.class, new ChatHandler(state) {
+		dispatcher.registerChannel(UserDeparture.class, new ChatHandler(state) {
 			@Override
 			public void dispatch(Event evt) {
 				UserDeparture departure = (UserDeparture) evt;
@@ -116,7 +116,7 @@ public class StatefulChatEventMachine {
 			}
 		});
 
-		state.registerChannel(UserMessage.class, new ChatHandler(state) {
+		dispatcher.registerChannel(UserMessage.class, new ChatHandler(state) {
 			@Override
 			public void dispatch(Event evt) {
 				UserMessage message = (UserMessage) evt;
@@ -131,16 +131,17 @@ public class StatefulChatEventMachine {
 	}
 
 	public static void main(String[] args) {
+		EventDispatcher dispatcher = new EventDispatcher();
 		ChatState state = new ChatState();
 		Queue<Event> eventQueue = new LinkedList<Event>();
 
-		registerHandlers(state);
+		registerHandlers(dispatcher, state);
 
 		// Initialize users
 		User foo = new User(eventQueue, "foo");
 		User bar = new User(eventQueue, "bar");
-		state.dispatch(new UserArrival(foo));
-		state.dispatch(new UserArrival(bar));
+		dispatcher.dispatch(new UserArrival(foo));
+		dispatcher.dispatch(new UserArrival(bar));
 
 		// Enqueue events from individual users
 		foo.sendMessage("hello, bar!");
@@ -150,11 +151,11 @@ public class StatefulChatEventMachine {
 		// Dispatch all queued events
 		while (!eventQueue.isEmpty()) {
 			Event evt = eventQueue.remove();
-			state.dispatch(evt);
+			dispatcher.dispatch(evt);
 		}
 
 		// Finish up simulation
-		state.dispatch(new UserDeparture(state, foo));
-		state.dispatch(new UserDeparture(state, bar));
+		dispatcher.dispatch(new UserDeparture(foo));
+		dispatcher.dispatch(new UserDeparture(bar));
 	}
 }
