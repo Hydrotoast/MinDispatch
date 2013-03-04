@@ -11,10 +11,7 @@ import edu.giocc.MinDispatch.EventDispatcher;
 import edu.giocc.MinDispatch.Handler;
 
 public class ChatAIEventMachine {
-	private static ChatState state;
-	private static Queue<Event> eventQueue;
-
-	private static class ChatState extends EventDispatcher {
+	private static class ChatState {
 		private ArrayList<User> users;
 
 		public ChatState() {
@@ -54,7 +51,7 @@ public class ChatAIEventMachine {
 	private static class UserDeparture extends Event {
 		public User user;
 		
-		public UserDeparture(ChatState state, User user) {
+		public UserDeparture(User user) {
 			this.user = user;
 		}
 	}
@@ -165,11 +162,8 @@ public class ChatAIEventMachine {
 		}
 	}
 
-	public static void setup() {
-		state = new ChatState();
-		eventQueue = new LinkedList<Event>();
-
-		state.registerChannel(UserArrival.class, new ChatHandler(state) {
+	public static void setup(EventDispatcher dispatcher, ChatState state) {
+		dispatcher.registerChannel(UserArrival.class, new ChatHandler(state) {
 			@Override
 			public void dispatch(Event evt) {
 				UserArrival arrival = (UserArrival) evt;
@@ -180,7 +174,7 @@ public class ChatAIEventMachine {
 			}
 		});
 
-		state.registerChannel(UserDeparture.class, new ChatHandler(state) {
+		dispatcher.registerChannel(UserDeparture.class, new ChatHandler(state) {
 			@Override
 			public void dispatch(Event evt) {
 				UserDeparture departure = (UserDeparture) evt;
@@ -190,7 +184,7 @@ public class ChatAIEventMachine {
 			}
 		});
 
-		state.registerChannel(UserMessage.class, new ChatHandler(state) {
+		dispatcher.registerChannel(UserMessage.class, new ChatHandler(state) {
 			@Override
 			public void dispatch(Event evt) {
 				UserMessage message = (UserMessage) evt;
@@ -205,13 +199,17 @@ public class ChatAIEventMachine {
 	}
 
 	public static void main(String[] args) {
-		setup();
+		EventDispatcher dispatcher = new EventDispatcher();
+		ChatState state = new ChatState();
+		Queue<Event> eventQueue = new LinkedList<Event>();
+		
+		setup(dispatcher, state);
 
 		// Initialize user and AI
 		User me = new User(eventQueue, "me");
 		User ai = new ChatAI(eventQueue, "ai");
-		state.dispatch(new UserArrival(me));
-		state.dispatch(new UserArrival(ai));
+		dispatcher.dispatch(new UserArrival(me));
+		dispatcher.dispatch(new UserArrival(ai));
 		
 		Scanner s = new Scanner(System.in);
 		String line = "";
@@ -223,12 +221,12 @@ public class ChatAIEventMachine {
 			// Handle events
 			while (!eventQueue.isEmpty()) {
 				Event evt = eventQueue.remove();
-				state.dispatch(evt);
+				dispatcher.dispatch(evt);
 			}
 		} while (!line.equals("goodbye") && s.hasNext());
 		s.close();
 		
-		state.dispatch(new UserDeparture(state, me));
-		state.dispatch(new UserDeparture(state, ai));
+		dispatcher.dispatch(new UserDeparture(me));
+		dispatcher.dispatch(new UserDeparture(ai));
 	}
 }
