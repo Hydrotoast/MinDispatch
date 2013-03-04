@@ -16,7 +16,7 @@ public class StatefulChatEventMachine {
 			this.users = new ArrayList<User>();
 		}
 
-		public synchronized void broadcast(Event evt) {
+		public void broadcast(Event evt) {
 			for (User recipient : users)
 				recipient.dispatch(evt);
 		}
@@ -133,7 +133,7 @@ public class StatefulChatEventMachine {
 	public static void main(String[] args) {
 		ChatState state = new ChatState();
 		Queue<Event> eventQueue = new LinkedList<Event>();
-		
+
 		registerHandlers(state);
 
 		// Initialize users
@@ -141,18 +141,18 @@ public class StatefulChatEventMachine {
 		User bar = new User(eventQueue, "bar");
 		state.dispatch(new UserArrival(foo));
 		state.dispatch(new UserArrival(bar));
-		
+
 		// Enqueue events from individual users
 		foo.sendMessage("hello, bar!");
 		bar.sendMessage("hello, foo!");
 		foo.sendMessage("goodbye, bar!");
-		
+
 		// Dispatch all queued events
 		while (!eventQueue.isEmpty()) {
 			Event evt = eventQueue.remove();
 			state.dispatch(evt);
 		}
-		
+
 		// Finish up simulation
 		state.dispatch(new UserDeparture(state, foo));
 		state.dispatch(new UserDeparture(state, bar));
