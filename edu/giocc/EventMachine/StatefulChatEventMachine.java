@@ -9,9 +9,6 @@ import edu.giocc.MinDispatch.EventDispatcher;
 import edu.giocc.MinDispatch.Handler;
 
 public class StatefulChatEventMachine {
-	private static ChatState state;
-	private static Queue<Event> eventQueue;
-
 	private static class ChatState extends EventDispatcher {
 		private ArrayList<User> users;
 
@@ -97,10 +94,7 @@ public class StatefulChatEventMachine {
 		}
 	}
 
-	public static void setup() {
-		state = new ChatState();
-		eventQueue = new LinkedList<Event>();
-
+	public static void registerHandlers(ChatState state) {
 		state.registerChannel(UserArrival.class, new ChatHandler(state) {
 			@Override
 			public void dispatch(Event evt) {
@@ -137,7 +131,10 @@ public class StatefulChatEventMachine {
 	}
 
 	public static void main(String[] args) {
-		setup();
+		ChatState state = new ChatState();
+		Queue<Event> eventQueue = new LinkedList<Event>();
+		
+		registerHandlers(state);
 
 		// Initialize users
 		User foo = new User(eventQueue, "foo");
